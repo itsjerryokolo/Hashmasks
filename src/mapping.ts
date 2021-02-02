@@ -7,6 +7,11 @@ import {
   OwnershipTransferred,
   Transfer
 } from "../generated/hashmasks/hashmasks"
+import {
+  nameChangeToken,
+  Approval,
+  Transfer
+} from "../generated/nameChangeToken/nameChangeToken"
 import { ExampleEntity } from "../generated/schema"
 
 export function handleApproval(event: Approval): void {
