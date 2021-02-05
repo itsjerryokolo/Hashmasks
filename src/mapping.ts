@@ -1,42 +1,44 @@
-import { BigInt } from "@graphprotocol/graph-ts"
+import { BigInt, Bytes, BigDecimal, ByteArray, ethereum } from "@graphprotocol/graph-ts"
 import {
   hashmasks,
   Approval,
   ApprovalForAll,
-  NameChange,
+  NameChange as ChangeName,
   OwnershipTransferred,
   Transfer
 } from "../generated/hashmasks/hashmasks"
 import {
   nameChangeToken,
-  Approval,
-  Transfer
+  Approval as NctApproval,
+  Transfer as NctTransfer
 } from "../generated/nameChangeToken/nameChangeToken"
-import { ExampleEntity } from "../generated/schema"
+
+import { NameChange, Owner, Transaction, Hashmask, NameChangeToken} from "../generated/schema"
+
 
 export function handleApproval(event: Approval): void {
-  // Entities can be loaded from the store using a string ID; this ID
-  // needs to be unique across all entities of the same type
-  let entity = ExampleEntity.load(event.transaction.from.toHex())
+  // // Entities can be loaded from the store using a string ID; this ID
+  // // needs to be unique across all entities of the same type
+  // let entity = ExampleEntity.load(event.transaction.from.toHex())
 
-  // Entities only exist after they have been saved to the store;
-  // `null` checks allow to create entities on demand
-  if (entity == null) {
-    entity = new ExampleEntity(event.transaction.from.toHex())
+  // // Entities only exist after they have been saved to the store;
+  // // `null` checks allow to create entities on demand
+  // if (entity == null) {
+  //   entity = new ExampleEntity(event.transaction.from.toHex())
 
-    // Entity fields can be set using simple assignments
-    entity.count = BigInt.fromI32(0)
-  }
+  //   // Entity fields can be set using simple assignments
+  //   entity.count = BigInt.fromI32(0)
+  // }
 
-  // BigInt and BigDecimal math are supported
-  entity.count = entity.count + BigInt.fromI32(1)
+  // // BigInt and BigDecimal math are supported
+  // entity.count = entity.count + BigInt.fromI32(1)
 
-  // Entity fields can be set based on event parameters
-  entity.owner = event.params.owner
-  entity.approved = event.params.approved
+  // // Entity fields can be set based on event parameters
+  // entity.owner = event.params.owner
+  // entity.approved = event.params.approved
 
-  // Entities can be written to the store with `.save()`
-  entity.save()
+  // // Entities can be written to the store with `.save()`
+  // entity.save()
 
   // Note: If a handler doesn't require existing field values, it is faster
   // _not_ to load the entity from the store. Instead, create it fresh with
@@ -81,8 +83,91 @@ export function handleApproval(event: Approval): void {
 
 export function handleApprovalForAll(event: ApprovalForAll): void {}
 
-export function handleNameChange(event: NameChange): void {}
 
-export function handleOwnershipTransferred(event: OwnershipTransferred): void {}
+export function handleNameChange(event: ChangeName): void {
+  let namechange = NameChange.load(event.params.maskIndex.toString())
+  let transaction = Transaction.load(event.block.hash.toHexString())
+  let mask = Hashmask.load(event.params.maskIndex.toString())
+  let contract = hashmasks.bind(event.address)
+  let owner = Owner.load(event.params.maskIndex.toString())
 
-export function handleTransfer(event: Transfer): void {}
+  if(transaction == null){
+    transaction = new Transaction(event.block.hash.toHexString())
+  }
+  if(namechange == null){
+    namechange = new NameChange(event.params.maskIndex.toString())
+  }
+  if(owner == null){
+    owner = new Owner(event.params.maskIndex.toString())
+  }
+  if(mask == null){
+    mask = new Hashmask(event.params.maskIndex.toString())
+  }
+  
+  // owner.balance = contract.balanceOf((contract.ownerOf((event.params.maskIndex))))
+
+  owner.id = contract.ownerOf((event.params.maskIndex)).toHexString()
+
+  mask.maxSupply = contract.MAX_NFT_SUPPLY()
+  mask.startingindex = contract.startingIndex()
+  mask.tokenName = contract.name()
+  mask.hashmaskName = contract.tokenNameByIndex(event.params.maskIndex)
+  mask.hashmaskSymbol = contract.symbol()
+  mask.allMasks = contract.tokenByIndex(event.params.maskIndex)
+  mask.transaction = transaction.id
+  mask.currentOwner = owner.id
+  
+  namechange.mask = mask.id
+  namechange.newName = event.params.newName
+  namechange.transaction = transaction.id 
+
+  transaction.date = event.block.timestamp
+  transaction.gasUsed = event.block.gasUsed
+  transaction.block = event.block.number
+
+  
+  namechange.save()
+  transaction.save()
+  mask.save()
+  owner.save()
+
+}
+
+export function handleOwnershipTransferred(event: OwnershipTransferred): void {
+
+}
+
+export function handleTransfer(event: Transfer): void {
+}
+
+
+export function handleNctTransfer(event: NctTransfer): void {
+  let nct = new NameChangeToken(event.params.to.toHexString())
+  let contract = nameChangeToken.bind(event.address)
+  let owner = Owner.load(event.params.to.toHexString())
+  let transaction = Transaction.load(event.block.hash.toHexString())
+
+  if(transaction == null){
+    transaction = new Transaction(event.block.hash.toHexString())
+  }
+  if(owner == null){
+    owner = new Owner(event.params.to.toHexString())
+  }
+
+
+  nct.receiver = owner.id
+  nct.sender = event.params.from
+  nct.transaction = transaction.id
+
+  transaction.date = event.block.timestamp
+  transaction.gasUsed = event.block.gasUsed
+  transaction.block = event.block.number
+
+  nct.save()
+  transaction.save()
+
+}
+
+export function handleNctApproval(event: NctApproval): void {
+ 
+}
