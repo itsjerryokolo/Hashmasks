@@ -46,17 +46,15 @@ dataSources:
       apiVersion: 0.0.4
       language: wasm/assemblyscript
       entities:
+        - NameChangeToken
         - Approval
-        - ApprovalForAll
-        - NameChange
-        - OwnershipTransferred
         - Transfer
       abis:
         - name: nameChangeToken
           file: ./abis/nct.json
       eventHandlers:
         - event: Approval(indexed address,indexed address,uint256)
-          handler: handleApproval
+          handler: handleNctApproval
         - event: Transfer(indexed address,indexed address,uint256)
-          handler: handleTransfer
+          handler: handleNctTransfer
       file: ./src/mapping.ts
