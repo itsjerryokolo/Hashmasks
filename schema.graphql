@@ -1,6 +1,43 @@
-type ExampleEntity @entity {
+type Owner @entity {
+  "Ethereum Address"
   id: ID!
-  count: BigInt!
-  owner: Bytes! # address
-  approved: Bytes! # address
+  masksOwned: [Hashmask!]! @derivedFrom(field: "currentOwner")
+  balance: BigInt
+}
+
+type Hashmask @entity {
+  id: ID!
+  allMasks: BigInt
+  currentOwner: Owner #ownerOf
+  hashmaskName: String #tokenNamebyIndex
+  maxSupply: BigInt
+  startingindex: BigInt
+  tokenName: String!
+  hashmaskSymbol: String
+  transaction: Transaction
+}
+
+type NameChange @entity {
+  id: ID!
+  currentOwner: Owner
+  mask: Hashmask
+  newName: String!
+  transaction: Transaction
+}
+
+type NameChangeToken @entity {
+  id: ID!
+  receiver: Owner
+  sender: Bytes!
+  transaction: Transaction
+}
+
+type Transaction @entity {
+  id: ID!
+  owner: Owner
+  hashmask: Hashmask
+  nameChangeToken: NameChangeToken
+  date: BigInt!
+  block: BigInt!
+  gasUsed: BigInt!
 }
